@@ -1,0 +1,9 @@
+[submodule "maskrcnn-benchmark"]
+	path = maskrcnn-benchmark
+	url = git@github.com:facebookresearch/maskrcnn-benchmark.git
+[submodule "cocoapi"]
+	path = cocoapi
+	url = https://github.com/cocodataset/cocoapi.git
+[submodule "apex"]
+	path = apex
+	url = https://github.com/NVIDIA/apex.git
