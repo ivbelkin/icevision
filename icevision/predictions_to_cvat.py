@@ -19,6 +19,11 @@ def build_parser():
         help="file with *.xml cvat annotations"
     )
     parser.add_argument(
+        "--labels-file",
+        type=str,
+        help="file with space separated labels"
+    )
+    parser.add_argument(
         "--conf-threshold",
         type=float,
         default=0.1
@@ -33,6 +38,8 @@ def build_parser():
 
 def main(args):
     predictions = torch.load(args.predictions)
+    with open(args.labels_file, "r") as f:
+        labels = f.read().split(" ")
     ds = CvatDataset()
 
     for image_id, prediction in enumerate(tqdm(predictions)):
@@ -48,10 +55,10 @@ def main(args):
             bbox = prediction.bbox[box_id].numpy()
             label = prediction.get_field("labels")[box_id].numpy()
             score = prediction.get_field("scores")[box_id].numpy()
-            if score < args.conf_threshold:
+            if score < args.conf_threshold or label == 0:
                 continue
             ds.add_box(
-                image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=label
+                image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=labels[label - 1]
             )
 
     ds.dump(args.output_file)
