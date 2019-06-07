@@ -33,6 +33,9 @@ class CvatDataset:
             if "width" in image.attrib and "height" in image.attrib:
                 self._set_size(image_id, image.attrib["width"], image.attrib["height"])
 
+            if "name" in image.attrib:
+                self._set_name(image_id, image.attrib["name"])
+
     def dump(self, path=None):
         path = path or self._loaded_from
         assert path, "path should be specified or markup loaded from file"
@@ -48,6 +51,9 @@ class CvatDataset:
             if "height" in image and "width" in image:
                 image_attrib["height"] = str(image["height"])
                 image_attrib["width"] = str(image["width"])
+
+            if "name" in image:
+                image_attrib["name"] = image["name"]
 
             image_elem = xml.SubElement(root, "image", image_attrib)
 
@@ -108,7 +114,7 @@ class CvatDataset:
         return {"height": image["height"], "width": image["width"]}
 
     def _set_size(self, image_id, width, height):
-        """Dont call outside the class!"""
+        """Don't call outside the class!"""
         assert self._loaded_from
         image = self._data[image_id]
         image["width"] = width
@@ -116,3 +122,11 @@ class CvatDataset:
 
     def get_image_ids(self):
         return sorted(self._data.keys())
+
+    def get_name(self, image_id):
+        return self._data[image_id]["name"]
+
+    def _set_name(self, image_id, name):
+        """Don't call outside the class!"""
+        assert self._loaded_from
+        self._data[image_id]["name"] = name
