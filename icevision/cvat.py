@@ -7,8 +7,10 @@ class CvatDataset:
     def __init__(self):
         self._data = {}
         self._next_id = 0
+        self._loaded_from = None
 
     def load(self, path):
+        self._loaded_from = path
         tree = ET.ElementTree(file=path)
         root = tree.getroot()
 
@@ -28,20 +30,28 @@ class CvatDataset:
                                   polygon.attrib["points"].split(";")))
                 self.add_polygon(image_id, points, polygon.attrib["label"], polygon.attrib["occluded"])
 
-    def dump(self, path):
+            if "width" in image.attrib and "height" in image.attrib:
+                self._set_size(image_id, image.attrib["width"], image.attrib["height"])
+
+    def dump(self, path=None):
+        path = path or self._loaded_from
+        assert path, "path should be specified or markup loaded from file"
+
         root = xml.Element("annotations")
 
         version = xml.SubElement(root, "version")
         version.text = "1.1"
 
-        for image_id, image_data in self._data.items():
-            image_elem = xml.SubElement(
-                root,
-                "image",
-                id=str(image_id)
-            )
+        for image_id, image in self._data.items():
+            image_attrib = {"id": str(image_id)}
 
-            for box in image_data["boxes"]:
+            if "height" in image and "width" in image:
+                image_attrib["height"] = str(image["height"])
+                image_attrib["width"] = str(image["width"])
+
+            image_elem = xml.SubElement(root, "image", image_attrib)
+
+            for box in image["boxes"]:
                 xml.SubElement(
                     image_elem,
                     "box",
@@ -50,7 +60,7 @@ class CvatDataset:
                     occluded=str(int(box["occluded"]))
                 )
 
-            for polygon in image_data["polygons"]:
+            for polygon in image["polygons"]:
                 xml.SubElement(
                     image_elem,
                     "polygon",
@@ -92,3 +102,17 @@ class CvatDataset:
 
     def get_polygons(self, image_id):
         return self._data[image_id]["polygons"]
+
+    def get_size(self, image_id):
+        image = self._data[image_id]
+        return {"height": image["height"], "width": image["width"]}
+
+    def _set_size(self, image_id, width, height):
+        """Dont call outside the class!"""
+        assert self._loaded_from
+        image = self._data[image_id]
+        image["width"] = width
+        image["height"] = height
+
+    def get_image_ids(self):
+        return sorted(self._data.keys())
