@@ -25,7 +25,7 @@ def main(args):
     filenames = sorted(os.listdir(args.annot_dir))
 
     ds = CvatDataset()
-    for filename in tqdm(filenames[:2]):
+    for filename in tqdm(filenames):
         image_id = int(filename.split(".")[0])
         path = os.path.join(args.annot_dir, filename)
         df = pd.read_csv(path, sep="\t", na_values=[], keep_default_na=False, dtype={
