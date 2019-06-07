@@ -5,7 +5,8 @@ import xml.etree.cElementTree as ET
 class CvatDataset:
 
     def __init__(self):
-        self._data = {}
+        self._images = {}
+        self._labels = []
         self._next_id = 0
         self._loaded_from = None
 
@@ -13,6 +14,10 @@ class CvatDataset:
         self._loaded_from = path
         tree = ET.ElementTree(file=path)
         root = tree.getroot()
+
+        for name in root.findall("meta/task/labels/label/name"):
+            self._labels.append(name.text)
+        self._labels = sorted(self._labels)
 
         for image in root.iter("image"):
             image_id = int(image.attrib["id"])
@@ -45,7 +50,16 @@ class CvatDataset:
         version = xml.SubElement(root, "version")
         version.text = "1.1"
 
-        for image_id, image in self._data.items():
+        if self._labels:
+            meta = xml.SubElement(root, "meta")
+            task = xml.SubElement(meta, "task")
+            labels = xml.SubElement(task, "labels")
+            for lbl in self._labels:
+                label = xml.SubElement(labels, "label")
+                name = xml.SubElement(label, "name")
+                name.text = lbl
+
+        for image_id, image in self._images.items():
             image_attrib = {"id": str(image_id)}
 
             if "height" in image and "width" in image:
@@ -86,7 +100,7 @@ class CvatDataset:
         else:
             self._next_id = image_id + 1
 
-        self._data[image_id] = {
+        self._images[image_id] = {
             "boxes": [],
             "polygons": []
         }
@@ -94,39 +108,42 @@ class CvatDataset:
         return image_id
 
     def add_box(self, image_id, xtl, ytl, xbr, ybr, label, occluded=False):
-        self._data[image_id]["boxes"].append({
+        self._images[image_id]["boxes"].append({
             "xtl": xtl, "ytl": ytl, "xbr": xbr, "ybr": ybr, "label": label, "occluded": occluded
         })
 
     def add_polygon(self, image_id, points, label, occluded=False):
-        self._data[image_id]["polygons"].append({
+        self._images[image_id]["polygons"].append({
             "points": points, "label": label, "occluded": occluded
         })
 
     def get_boxes(self, image_id):
-        return self._data[image_id]["boxes"]
+        return self._images[image_id]["boxes"]
 
     def get_polygons(self, image_id):
-        return self._data[image_id]["polygons"]
+        return self._images[image_id]["polygons"]
 
     def get_size(self, image_id):
-        image = self._data[image_id]
+        image = self._images[image_id]
         return {"height": image["height"], "width": image["width"]}
 
     def _set_size(self, image_id, width, height):
         """Don't call outside the class!"""
         assert self._loaded_from
-        image = self._data[image_id]
+        image = self._images[image_id]
         image["width"] = width
         image["height"] = height
 
     def get_image_ids(self):
-        return sorted(self._data.keys())
+        return sorted(self._images.keys())
 
     def get_name(self, image_id):
-        return self._data[image_id]["name"]
+        return self._images[image_id]["name"]
 
     def _set_name(self, image_id, name):
         """Don't call outside the class!"""
         assert self._loaded_from
-        self._data[image_id]["name"] = name
+        self._images[image_id]["name"] = name
+
+    def get_labels(self):
+        return self._labels
