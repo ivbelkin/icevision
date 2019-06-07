@@ -131,8 +131,8 @@ class CvatDataset:
         """Don't call outside the class!"""
         assert self._loaded_from
         image = self._images[image_id]
-        image["width"] = width
-        image["height"] = height
+        image["width"] = int(width)
+        image["height"] = int(height)
 
     def get_image_ids(self):
         return sorted(self._images.keys())
@@ -147,3 +147,6 @@ class CvatDataset:
 
     def get_labels(self):
         return self._labels
+
+    def __len__(self):
+        return len(self._images)
