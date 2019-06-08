@@ -33,6 +33,10 @@ def build_parser():
         type=float,
         default=0.3
     )
+    parser.add_argument(
+        "--add-filenames",
+        action="store_true"
+    )
     return parser
 
 
@@ -43,6 +47,8 @@ def main(args):
     ds = CvatDataset()
 
     for image_id, prediction in enumerate(tqdm(predictions)):
+        filename = prediction["filename"]
+        prediction = prediction["result"]
         ds.add_image(image_id)
         boxes = prediction.bbox
         scores = prediction.get_field("scores")
@@ -55,11 +61,23 @@ def main(args):
             bbox = prediction.bbox[box_id].numpy()
             label = prediction.get_field("labels")[box_id].numpy()
             score = prediction.get_field("scores")[box_id].numpy()
+
             if score < args.conf_threshold or label == 0:
                 continue
+
+            slabel = labels[label - 1].replace("_", ".")
+            if slabel == "5.19" or slabel.startswith("5.19."):
+                bbox = bbox.reshape(-1, 2)
+                center = bbox.mean(axis=0)
+                bbox = center + (bbox - center) * (1 - 9 / 66)
+                bbox = bbox.reshape(-1)
+
             ds.add_box(
                 image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=labels[label - 1]
             )
+
+        if args.add_filenames:
+            ds._images[image_id]["name"] = filename
 
     ds.dump(args.output_file)
 
