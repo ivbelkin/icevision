@@ -85,10 +85,10 @@ def main(args):
                 if team_result_best["results"]["all"] is not None:
                     print(team_name, team_result_best["results"]["all"]["total"])
     else:
-        try:
-            i = 1
-            interval = list(map(int, args.interval.split(",")))
-            while True:
+        i = 1
+        interval = list(map(int, args.interval.split(",")))
+        while True:
+            try:
                 print("Request", i)
                 result = fetch()
                 for team_name, team_result in result.items():
@@ -102,8 +102,10 @@ def main(args):
                 print("Sleep", t, "seconds")
                 sleep(t)
                 i += 1
-        except KeyboardInterrupt:
-            print("Stop")
+            except KeyboardInterrupt:
+                print("Stop")
+            except:
+                print("Error")
 
 
 if __name__ == "__main__":
