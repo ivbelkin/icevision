@@ -1,9 +1,8 @@
 import argparse
 import torch
+import numpy as np
 
-from tqdm import tqdm
-from maskrcnn_benchmark.layers import nms as box_nms
-
+from icevision.seq_bbox_matching import bbox_nms, sbm_filter
 from icevision.cvat import CvatDataset
 
 
@@ -26,7 +25,7 @@ def build_parser():
     parser.add_argument(
         "--conf-threshold",
         type=float,
-        default=0.1
+        default=0.0
     )
     parser.add_argument(
         "--nms-threshold",
@@ -40,44 +39,113 @@ def build_parser():
     return parser
 
 
+def extract_frames(predictions):
+    frames = []
+    for prediction in predictions:
+        result = prediction["result"]
+        bboxes = result.bbox.numpy()
+        lls = result.get_field("log_likelihood").numpy()
+        frame = (bboxes, lls)
+        frames.append(frame)
+    return frames
+
+
+def extract_filenames(predictions):
+    filenames = []
+    for prediction in predictions:
+        filename = prediction["filename"]
+        filenames.append(filename)
+    return filenames
+
+
+def confidence_filter(frames, threshold):
+    new_frames = []
+    for bboxes, lls in frames:
+        scores = np.exp(np.max(lls, axis=1))
+        keep = scores > threshold
+        bboxes = bboxes[keep]
+        lls = lls[keep]
+        new_frames.append((bboxes, lls))
+    return new_frames
+
+
+def nms_filter(frames, threshold):
+    new_frames = []
+    for bboxes, lls in frames:
+        scores = np.max(lls, axis=1)
+        keep, supressed = bbox_nms(bboxes, scores, threshold)
+        for i, j in enumerate(keep):
+            for k in supressed[i]:
+                lls[j] += lls[k]
+        bboxes = bboxes[keep]
+        lls = lls[keep]
+        new_frames.append((bboxes, lls))
+    return new_frames
+
+
+def bg_filter(frames):
+    new_frames = []
+    for bboxes, lls in frames:
+        keep = []
+        for i, (bbox, ll) in enumerate(zip(bboxes, lls)):
+            label = np.argmax(ll)
+            if label > 0:
+                keep.append(i)
+        bboxes = bboxes[keep]
+        lls = lls[keep]
+        new_frames.append((bboxes, lls))
+    return new_frames
+
+
+def area_filter(frames, skip_less_then):
+    new_frames = []
+    for bboxes, lls in frames:
+        areas = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+        keep = areas >= skip_less_then
+        bboxes = bboxes[keep]
+        lls = lls[keep]
+        new_frames.append((bboxes, lls))
+    return new_frames
+
+
+def adjust_bbox(bbox, label):
+    label = label.replace("_", ".")
+    if label == "5.19" or label.startswith("5.19."):
+        bbox = bbox.reshape(-1, 2)
+        center = bbox.mean(axis=0)
+        bbox = center + (bbox - center) * (1 - 9 / 66)
+        bbox = bbox.reshape(-1)
+    return bbox
+
+
 def main(args):
     predictions = torch.load(args.predictions)
     with open(args.labels_file, "r") as f:
         labels = f.read().split(" ")
     ds = CvatDataset()
 
-    for image_id, prediction in enumerate(tqdm(predictions)):
-        filename = prediction["filename"]
-        prediction = prediction["result"]
+    frames = extract_frames(predictions)
+    filenames = extract_filenames(predictions)
+
+    frames = bg_filter(frames)
+    frames = nms_filter(frames, args.nms_threshold)
+    frames = sbm_filter(frames, min_tubelet_length=15, window=3, K=12)
+    frames = bg_filter(frames)
+    frames = area_filter(frames, 100)
+    frames = confidence_filter(frames, args.conf_threshold)
+
+    for image_id, ((bboxes, lls), filename) in enumerate(zip(frames, filenames)):
         ds.add_image(image_id)
-        boxes = prediction.bbox
-        scores = prediction.get_field("scores")
-        if args.nms_threshold > 0:
-            keep_ids = box_nms(boxes, scores, args.nms_threshold)
-        else:
-            keep_ids = range(len(prediction))
-
-        for box_id in keep_ids:
-            bbox = prediction.bbox[box_id].numpy()
-            label = prediction.get_field("labels")[box_id].numpy()
-            score = prediction.get_field("scores")[box_id].numpy()
-
-            if score < args.conf_threshold or label == 0:
-                continue
-
-            slabel = labels[label - 1].replace("_", ".")
-            if slabel == "5.19" or slabel.startswith("5.19."):
-                bbox = bbox.reshape(-1, 2)
-                center = bbox.mean(axis=0)
-                bbox = center + (bbox - center) * (1 - 9 / 66)
-                bbox = bbox.reshape(-1)
-
-            ds.add_box(
-                image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=labels[label - 1]
-            )
-
         if args.add_filenames:
             ds._images[image_id]["name"] = filename
+        for bbox, ll in zip(bboxes, lls):
+            amax = np.argmax(ll)
+            assert amax > 0
+            label = labels[amax - 1]
+            bbox = adjust_bbox(bbox, label)
+            ds.add_box(
+                image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=label
+            )
 
     ds.dump(args.output_file)
 

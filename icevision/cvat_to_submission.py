@@ -47,7 +47,6 @@ def main(args):
     for image_id in tqdm(ds.get_image_ids()):
         filename = os.path.basename(ds.get_name(image_id)).replace(args.image_ext, "")
         boxes = ds.get_boxes(image_id)
-
         for box in boxes:
             label = box["label"].replace("_", ".")
             cnt = 0
