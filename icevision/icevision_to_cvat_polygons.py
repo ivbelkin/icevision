@@ -20,10 +20,11 @@ def build_parser():
     )
     return parser
 
-rhombus_signs = {'2.1'}
+rhombus_signs = {'2.1', '2.2'}
 triangle_signs = {'2.4'}
-round_signs = {'3.1','3.24','3.27','4.1','4.2.1','4.2.2','4.2.3','4.1.1','4.1.2','4.1.3','4.1.4','4.1.5','4.1.6'}
-rectangle_signs = {'1.17', '5.15.2', '8.14', '8.22.3', '8.2.6', '1.34.2', '8.2.1', '8.2.2', '5.5', '8.5.4', '5.31', '3.4', '6.9.2', '5.19.2', '8.21.1', '5.7.1', '5.23.1', '2.2', '8.4.1', '1.12.1', '8', '6.6', '5.19.1', '8.2.4', '5.24.1', '1.31', '8.2.5', '5.6', '5.7.2', '1.34.1', '3.10', '1.20.2', '8.22.1', 'NA', '5.15.1', '6.9.1', '8.17', '8.13', '6.16', '5.15.5', '3.2', '1.25', '5.4', '6.13', '6.7', '6.10.1', '5.15.3', '3.13', '1.15', '5.15.4', '7.5', '4.3', '3.32', '5.3', '5.14', '5.16', '8.1.1', '6.10.2', '1.8', '5.20', '7.3', '2.1', '6.4'}
+round_signs = {'3.1', '3.13', '3.2', '3.24','3.27', '3.32', '3.10','4.1','4.2.1','4.2.2','4.2.3','4.1.1','4.1.2','4.1.3','4.1.4','4.1.5','4.1.6', '4.3'}
+reverse_triangle_signs = {'1.17', '1.12.1', '1.31', '1.20.2', '1.25', '1.15', '1.8'}
+rectangle_signs = {'8.14', '8.13', '5.14', '8.1.1', '5.6', '5.20', '3.4', '6.4', '5.7.1', '6.16', '8.2.1', '6.6', '1.34.2', '5.5', '5.16', '6.10.1', '8.2.2', '5.19.2', 'NA', '5.7.2', '5.15.5', '8.4.1', '5.3', '8.21.1', '5.31', '8.5.4', '8.2.6', '7.5', '1.34.1', '8.17', '8', '7.3', '5.24.1', '8.22.3', '5.15.2', '8.2.4', '5.23.1', '6.10.2', '5.4', '8.2.5', '6.7', '8.22.1', '5.15.1', '5.15.3', '6.9.2', '5.15.4', '6.13', '5.19.1', '6.9.1'}
 
 def label_image(label):
     if label in rhombus_signs:
@@ -32,6 +33,8 @@ def label_image(label):
         return "triangle"
     elif label in round_signs:
         return "round"
+    elif label in reverse_triangle_signs:
+        return "reverse_triangle"
     else: return "box"
 
 def polygon_round(xtl, ytl, xbr, ybr):
@@ -57,6 +60,13 @@ def polygon_triangle(xtl, ytl, xbr, ybr):
     points.append([xbr, ytl])
     points.append([(xbr+xtl)//2, ybr])
     points.append([xtl, ytl])
+    return points
+
+def polygon_reverse_triangle(xtl, ytl, xbr, ybr):
+    points = list()
+    points.append([xtl, ybr])
+    points.append([(xbr+xtl)//2, ytl])
+    points.append([xbr, ybr])
     return points
 
 def main(args):
@@ -95,6 +105,12 @@ def main(args):
                     label=record["class"],
                     occluded=int(record["occluded"]))
 
+            elif label == "reverse_triangle":
+                ds.add_polygon(
+                    image_id=image_id,
+                    points=polygon_reverse_triangle(record["xtl"], record["ytl"], record["xbr"], record["ybr"]),
+                    label=record["class"],
+                    occluded=int(record["occluded"]))
             else :
                 ds.add_box(
                     image_id=image_id,
