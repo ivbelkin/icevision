@@ -31,7 +31,14 @@ def build_parser():
     parser.add_argument(
         "--image-ext",
         type=str,
+        default=".jpg",
         help="image extension which will be removed"
+    )
+    parser.add_argument(
+        "--start-frame",
+        type=int,
+        default=0,
+        help="frame number to start with"
     )
     return parser
 
@@ -45,14 +52,15 @@ def main(args):
 
     result = []
     for image_id in tqdm(ds.get_image_ids()):
-        filename = os.path.basename(ds.get_name(image_id)).replace(args.image_ext, "")
+        # filename = os.path.basename(ds.get_name(image_id)).replace(args.image_ext, "")
+        filename = "{:0>6}".format(image_id + args.start_frame)
         boxes = ds.get_boxes(image_id)
         for box in boxes:
             label = box["label"].replace("_", ".")
             cnt = 0
             for lbl in labels:
                 if label == lbl or label.startswith(lbl + "."):
-                    record = {k: int(box[k]) for k in ["xtl", "ytl", "xbr", "ybr"]}
+                    record = {k: int(box[k]) * 2 for k in ["xtl", "ytl", "xbr", "ybr"]}
                     record["frame"] = os.path.join(args.image_folder, filename)
                     record["class"] = lbl
 
