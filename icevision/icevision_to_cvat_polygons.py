@@ -84,7 +84,7 @@ def main(args):
 
         ds.add_image(image_id)
         for record in df.to_dict("records"):
-            label = label_image(record["class"])
+            label = list(map(label_image, [record["class"]]))[0]
             if label == "round":
                 ds.add_polygon(
                     image_id=image_id,
