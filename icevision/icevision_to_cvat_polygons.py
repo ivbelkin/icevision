@@ -40,10 +40,11 @@ def label_image(label):
 def polygon_round(xtl, ytl, xbr, ybr):
     points = list()
     x_c, y_c = (xbr+xtl)//2, (ytl+ybr)//2
-    radius = (xbr-xtl)//2
+    a = (xbr-xtl)//2
+    b = (ytl-ybr)//2
     for i in range(30):
-        x = x_c + radius * cos(i*2*pi/30)
-        y = y_c + radius * sin(i*2*pi/30)
+        x = x_c + a * cos(i*2*pi/30)
+        y = y_c + b * sin(i*2*pi/30)
         points.append([int(x), int(y)])
     return points
 
