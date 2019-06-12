@@ -74,13 +74,11 @@ def polygon_reverse_triangle(xtl, ytl, xbr, ybr):
 def polygons(df_file):
     df = pd.DataFrame(columns=["frame", "occluded", "xtl", "ytl", "xbr", "ybr", "class"])
     ds = CvatDataset()
-    frame = int(df_file.iloc[0]["frame"])
-    for index, row in df_file.iterrows():
-        if frame == int(row["frame"]):
-            df = df.append(row)
-            frame = int(row["frame"])
-            continue
-
+    frames = df_file["frame"]
+    frames = list(set(frames))
+    frames.sort()
+    for frame in frames:
+        df = df_file.loc[df_file.frame == frame]
         ds.add_image(frame)
         for record in df.to_dict("records"):
             label = list(map(label_image, [record["class"]]))[0]
@@ -121,9 +119,6 @@ def polygons(df_file):
                     label=record["class"],
                     occluded=int(record["occluded"])
                 )
-        df = df.iloc[:0,]
-        df = df.append(row)
-        frame = int(row["frame"])
     ds.dump(args.output_file)
 
 
