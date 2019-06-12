@@ -137,7 +137,7 @@ def main(args):
     for image_id, ((bboxes, lls), filename) in enumerate(zip(frames, filenames)):
         ds.add_image(image_id)
         if args.add_filenames:
-            ds._images[image_id]["name"] = filename
+            ds.set_name(image_id, filename)
         for bbox, ll in zip(bboxes, lls):
             amax = np.argmax(ll)
             assert amax > 0

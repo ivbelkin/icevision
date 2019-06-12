@@ -1,8 +1,10 @@
 import argparse
+import os
 
 import pandas as pd
 
-from cvat import CvatDataset
+from icevision.cvat import CvatDataset
+from tqdm import tqdm
 
 
 def build_parser():
@@ -13,36 +15,38 @@ def build_parser():
         help="Directory with RTDS *.csv files"
     )
     parser.add_argument(
-        "--output_file",
+        "--image-dir",
+        type=str,
+        help="Directory with images"
+    )
+    parser.add_argument(
+        "--output-file",
         type=str,
         help="Path to output file"
     )
     return parser
 
+
 def main(args):
-    data = pd.read_csv(args.annot)
+    data = pd.read_csv(args.annot).set_index("filename")
     ds = CvatDataset()
-    image_names = sorted(set(data["filename"]))
-    for i in range(len(image_names)):
-        ds.add_image()
-    #for i in range(len())
-    for i in range(len(data['filename'])):
-        k = image_names.index(data['filename'][i])
-        #data["x_from"] = int(data["x_from"])
-        #data["y_from"] = int(data["y_from"])
-        #data["width"] = int(data["width"])
-        #data["height"] = int(data["height"])
-        ds.add_box(
-            image_id=k,
-            xtl=int(data["x_from"][i]),
-            ybr=int(data["y_from"][i]) + int(data["height"][i]),
-            xbr=int(data["x_from"][i]) + int(data["width"][i]),
-            ytl=int(data["y_from"][i]),
-            label=data["sign_class"][i]
-        )
+    image_names = sorted(os.listdir(args.image_dir))
+    for image_id, filename in enumerate(tqdm(image_names)):
+        ds.add_image(image_id)
+        ds.set_name(image_id, filename)
+        if filename in data.index:
+            sdf = data.loc[filename:filename]
+            for record in sdf.to_dict("records"):
+                ds.add_box(
+                    image_id=image_id,
+                    xtl=int(record["x_from"]),
+                    ybr=int(record["y_from"]) + int(record["height"]),
+                    xbr=int(record["x_from"]) + int(record["width"]),
+                    ytl=int(record["y_from"]),
+                    label=record["sign_class"]
+                )
+
     ds.dump(args.output_file)
-
-
 
 
 if __name__ == '__main__':

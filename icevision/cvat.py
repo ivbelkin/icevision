@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as xml
 import xml.etree.cElementTree as ET
+import os
 
 
 class CvatDataset:
@@ -36,10 +37,10 @@ class CvatDataset:
                 self.add_polygon(image_id, points, polygon.attrib["label"], polygon.attrib["occluded"])
 
             if "width" in image.attrib and "height" in image.attrib:
-                self._set_size(image_id, image.attrib["width"], image.attrib["height"])
+                self.set_size(image_id, int(image.attrib["width"]), int(image.attrib["height"]))
 
             if "name" in image.attrib:
-                self._set_name(image_id, image.attrib["name"])
+                self.set_name(image_id, image.attrib["name"])
 
     def dump(self, path=None):
         path = path or self._loaded_from
@@ -127,9 +128,7 @@ class CvatDataset:
         image = self._images[image_id]
         return {"height": image["height"], "width": image["width"]}
 
-    def _set_size(self, image_id, width, height):
-        """Don't call outside the class!"""
-        assert self._loaded_from
+    def set_size(self, image_id, width, height):
         image = self._images[image_id]
         image["width"] = int(width)
         image["height"] = int(height)
@@ -140,9 +139,7 @@ class CvatDataset:
     def get_name(self, image_id):
         return self._images[image_id]["name"]
 
-    def _set_name(self, image_id, name):
-        """Don't call outside the class!"""
-        assert self._loaded_from
+    def set_name(self, image_id, name):
         self._images[image_id]["name"] = name
 
     def get_labels(self):
@@ -150,3 +147,15 @@ class CvatDataset:
 
     def __len__(self):
         return len(self._images)
+
+    def update(self, right, on="name"):
+        assert on in ["name", "frame"]
+        if on == "frame":
+            self._images.update(right)
+        elif on == "name":
+            left_dict = {os.path.basename(v["name"]): v for v in self._images.values()}
+            right_dict = {os.path.basename(v["name"]): v for v in right._images.values()}
+            left_dict.update(right_dict)
+            self._images = {i: left_dict[name] for i, name in enumerate(sorted(left_dict))}
+        if self._labels:
+            self._labels = list(set(self._labels).union(right._labels))
