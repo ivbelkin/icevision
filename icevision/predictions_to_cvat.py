@@ -129,9 +129,9 @@ def main(args):
 
     frames = bg_filter(frames)
     frames = nms_filter(frames, args.nms_threshold)
-    frames = sbm_filter(frames, min_tubelet_length=15, window=3, K=12)
+    frames = sbm_filter(frames, min_tubelet_length=15, window=1, K=12)
     frames = bg_filter(frames)
-    frames = area_filter(frames, 100)
+    frames = area_filter(frames, 1000)
     frames = confidence_filter(frames, args.conf_threshold)
 
     for image_id, ((bboxes, lls), filename) in enumerate(zip(frames, filenames)):
@@ -141,9 +141,15 @@ def main(args):
         for bbox, ll in zip(bboxes, lls):
             amax = np.argmax(ll)
             assert amax > 0
+            if amax == len(labels) + 1:
+                continue
             label = labels[amax - 1]
-            bbox = adjust_bbox(bbox, label)
-            conf = np.exp(lls[amax])
+#<<<<<<< HEAD
+            #bbox = adjust_bbox(bbox, label)
+            #conf = np.exp(lls[amax])
+#=======
+            # bbox = adjust_bbox(bbox, label)
+#>>>>>>> master
             ds.add_box(
                 image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=label
             )

@@ -1,6 +1,6 @@
 [submodule "maskrcnn-benchmark"]
 	path = maskrcnn-benchmark
-	url = git@github.com:ivbelkin/maskrcnn-benchmark.git
+	url = https://github.com/ivbelkin/maskrcnn-benchmark.git
 [submodule "cocoapi"]
 	path = cocoapi
 	url = https://github.com/cocodataset/cocoapi.git

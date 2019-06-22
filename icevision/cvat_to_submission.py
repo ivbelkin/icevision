@@ -60,7 +60,7 @@ def main(args):
             cnt = 0
             for lbl in labels:
                 if label == lbl or label.startswith(lbl + "."):
-                    record = {k: int(box[k]) * 2 for k in ["xtl", "ytl", "xbr", "ybr"]}
+                    record = {k: int(box[k]) for k in ["xtl", "ytl", "xbr", "ybr"]}
                     record["frame"] = os.path.join(args.image_folder, filename)
                     record["class"] = lbl
 

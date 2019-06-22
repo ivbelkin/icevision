@@ -18,11 +18,21 @@ def build_parser():
         "--output-file",
         help="file with *.xml cvat annotations"
     )
+    parser.add_argument(
+        "--labels",
+        type=str,
+        help="file with space-separated labels"
+    )
     return parser
 
 
 def main(args):
     filenames = sorted(os.listdir(args.annot_dir))
+    if os.path.exists(args.labels):
+        with open(args.labels, "r") as f:
+            labels = f.read().strip().split(" ")
+    else:
+        labels = []
 
     ds = CvatDataset()
     for filename in tqdm(filenames):
@@ -33,7 +43,10 @@ def main(args):
             "temporary": bool, "occluded": bool, "data": str
         })
 
+        labels.extend(df["class"])
+
         ds.add_image(image_id)
+        ds.set_name(image_id, filename.replace(".tsv", ".jpg"))
         for record in df.to_dict("records"):
             ds.add_box(
                 image_id=image_id,
@@ -44,6 +57,10 @@ def main(args):
                 label=record["class"],
                 occluded=int(record["occluded"])
             )
+
+    labels = sorted(list(set(labels)))
+    with open(args.labels, "w") as f:
+        f.write(" ".join(labels))
 
     ds.dump(args.output_file)
 
