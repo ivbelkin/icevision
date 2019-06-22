@@ -144,7 +144,12 @@ def main(args):
             if amax == len(labels) + 1:
                 continue
             label = labels[amax - 1]
+#<<<<<<< HEAD
+            #bbox = adjust_bbox(bbox, label)
+            #conf = np.exp(lls[amax])
+#=======
             # bbox = adjust_bbox(bbox, label)
+#>>>>>>> master
             ds.add_box(
                 image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=label
             )
