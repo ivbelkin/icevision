@@ -143,6 +143,7 @@ def main(args):
             assert amax > 0
             label = labels[amax - 1]
             bbox = adjust_bbox(bbox, label)
+            conf = np.exp(lls[amax])
             ds.add_box(
                 image_id, xtl=bbox[0], ytl=bbox[1], xbr=bbox[2], ybr=bbox[3], label=label
             )
