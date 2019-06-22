@@ -38,6 +38,7 @@ def smooth_tubulets(frames, tubulets, window):
 def remove_small_tubelets(frames, tubelets, min_tubelet_length):
     new_tubelets = []
     for tubelet in tubelets:
+        assert len(tubelet) == tubelet[-1][0] - tubelet[0][0] + 1
         if len(tubelet) >= min_tubelet_length:
             new_tubelets.append(tubelet)
         else:
@@ -75,6 +76,8 @@ def find_tubelets(frames):
                 tubelet.append((current_frame, pairs[index][1]))
                 pairs.pop(index)
 
+        assert len(pairs) == 0
+
         # not extended tubelets are completed
         current_tubelets_new = []
         for tubelet in current_tubelets:
@@ -103,8 +106,8 @@ def find_tubelet_scores(frames, tubelets):
     for tubelet in tqdm(tubelets):
         score = 0
         for frame_idx, bbox_idx in tubelet:
-            score += frames[frame_idx][1][bbox_idx]
-        tubelet_scores.append(score / len(tubelet))
+            score += np.exp(frames[frame_idx][1][bbox_idx])
+        tubelet_scores.append(np.log(score / len(tubelet)))
     return tubelet_scores
 
 
