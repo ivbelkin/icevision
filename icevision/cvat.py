@@ -28,13 +28,7 @@ class CvatDataset:
                 box.attrib["occluded"] = bool(int(box.attrib["occluded"]))
                 for k in ["xtl", "ytl", "xbr", "ybr"]:
                     box.attrib[k] = float(box.attrib[k])
-                #Add conf
-                conf = None
-                conf_att = box.find("attribute[@name='conf']")
-                if conf_att is not None:
-                    conf = int(conf_att.text)
-
-                self.add_box(image_id, conf, **box.attrib)
+                self.add_box(image_id, **box.attrib)
 
             for polygon in image.iter("polygon"):
                 polygon.attrib["occluded"] = bool(int(polygon.attrib["occluded"]))
@@ -79,17 +73,13 @@ class CvatDataset:
             image_elem = xml.SubElement(root, "image", image_attrib)
 
             for box in image["boxes"]:
-                t_box = xml.SubElement(
+                xml.SubElement(
                     image_elem,
                     "box",
                     {k: str(box[k]) for k in ["xtl", "ytl", "xbr", "ybr"]},
                     label=box["label"],
                     occluded=str(int(box["occluded"]))
                 )
-                if box['conf'] is not None:
-                    t_attr = xml.SubElement(t_box, 'attribute', name="conf")
-                    t_attr.text = str(box['conf'])
-
 
             for polygon in image["polygons"]:
                 xml.SubElement(
@@ -118,9 +108,9 @@ class CvatDataset:
 
         return image_id
 
-    def add_box(self, image_id, conf, xtl, ytl, xbr, ybr, label, occluded=False):
+    def add_box(self, image_id, xtl, ytl, xbr, ybr, label, occluded=False):
         self._images[image_id]["boxes"].append({
-            "xtl": xtl, "ytl": ytl, "xbr": xbr, "ybr": ybr, "label": label, "occluded": occluded, "conf": conf
+            "xtl": xtl, "ytl": ytl, "xbr": xbr, "ybr": ybr, "label": label, "occluded": occluded
         })
 
     def add_polygon(self, image_id, points, label, occluded=False):
