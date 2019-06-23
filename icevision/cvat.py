@@ -31,8 +31,8 @@ class CvatDataset:
                 conf = None
                 conf_attr = box.find("attribute[@name='conf']")
                 if conf_attr is not None:
-                    conf = int(conf_attr.text)
-                self.add_box(image_id, conf, **box.attrib)
+                    conf = float(conf_attr.text)
+                self.add_box(image_id, **box.attrib,  conf=conf)
 
             for polygon in image.iter("polygon"):
                 polygon.attrib["occluded"] = bool(int(polygon.attrib["occluded"]))
@@ -87,7 +87,8 @@ class CvatDataset:
                 if box['conf'] is not None:
                     attr_node = xml.SubElement(
                         box_node,
-                        "attribute"
+                        "attribute",
+                        name='conf'
                     )
                     attr_node.text = str(box['conf'])
 
@@ -118,7 +119,7 @@ class CvatDataset:
 
         return image_id
 
-    def add_box(self, image_id, conf, xtl, ytl, xbr, ybr, label, occluded=False):
+    def add_box(self, image_id, xtl, ytl, xbr, ybr, label, occluded=False, conf=None):
         self._images[image_id]["boxes"].append({
             "xtl": xtl, "ytl": ytl, "xbr": xbr, "ybr": ybr, "label": label, "conf": conf, "occluded": occluded
         })
