@@ -28,7 +28,11 @@ class CvatDataset:
                 box.attrib["occluded"] = bool(int(box.attrib["occluded"]))
                 for k in ["xtl", "ytl", "xbr", "ybr"]:
                     box.attrib[k] = float(box.attrib[k])
-                self.add_box(image_id, **box.attrib)
+                conf = None
+                conf_attr = box.find("attribute[@name='conf']")
+                if conf_attr is not None:
+                    conf = float(conf_attr.text)
+                self.add_box(image_id, **box.attrib,  conf=conf)
 
             for polygon in image.iter("polygon"):
                 polygon.attrib["occluded"] = bool(int(polygon.attrib["occluded"]))
@@ -73,13 +77,20 @@ class CvatDataset:
             image_elem = xml.SubElement(root, "image", image_attrib)
 
             for box in image["boxes"]:
-                xml.SubElement(
+                box_node = xml.SubElement(
                     image_elem,
                     "box",
                     {k: str(box[k]) for k in ["xtl", "ytl", "xbr", "ybr"]},
                     label=box["label"],
                     occluded=str(int(box["occluded"]))
                 )
+                if box['conf'] is not None:
+                    attr_node = xml.SubElement(
+                        box_node,
+                        "attribute",
+                        name='conf'
+                    )
+                    attr_node.text = str(box['conf'])
 
             for polygon in image["polygons"]:
                 xml.SubElement(
@@ -108,9 +119,9 @@ class CvatDataset:
 
         return image_id
 
-    def add_box(self, image_id, xtl, ytl, xbr, ybr, label, occluded=False):
+    def add_box(self, image_id, xtl, ytl, xbr, ybr, label, occluded=False, conf=None):
         self._images[image_id]["boxes"].append({
-            "xtl": xtl, "ytl": ytl, "xbr": xbr, "ybr": ybr, "label": label, "occluded": occluded
+            "xtl": xtl, "ytl": ytl, "xbr": xbr, "ybr": ybr, "label": label, "conf": conf, "occluded": occluded
         })
 
     def add_polygon(self, image_id, points, label, occluded=False):
