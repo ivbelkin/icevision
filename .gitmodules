@@ -7,3 +7,6 @@
 [submodule "apex"]
 	path = apex
 	url = https://github.com/NVIDIA/apex.git
+[submodule "Automold--Road-Augmentation-Library"]
+	path = Automold--Road-Augmentation-Library
+	url = https://github.com/Sergey-Tkachenko/Automold--Road-Augmentation-Library.git
