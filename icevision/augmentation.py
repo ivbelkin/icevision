@@ -58,8 +58,8 @@ def transform(image_pil, nightly=False, hard=False):
     #probabilities
     shadow_add_p = 0.05
 
-    sun_add_p = 0.4
-    rain_add_p = 0.4
+    sun_add_p = 0.2
+    rain_add_p = 0.2
     speed_add_p = 0.2
 
     g_blur_p = 0.4
@@ -77,14 +77,15 @@ def transform(image_pil, nightly=False, hard=False):
 
     height = aug_im.shape[0]
     width = aug_im.shape[1]
-    y = random.randrange(height//3)
+    y = random.randrange(height // 3)
     x = random.randrange(width)
     aug_list = ['aug.add_sun_flare(aug_im, flare_center=(x, y), src_color=(255, 255, 255), src_radius=150, no_of_flare_circles=2)',
                 'aug.add_speed(aug_im, random.randrange(30, 60)/100)',
-                'aug.add_rain(aug_im, drop_length=random.randrange(10, 30))']
+                'aug.add_rain(aug_im, drop_length=random.randrange(10, 30))',
+                'aug_im']
     weights = [sun_add_p, speed_add_p, rain_add_p]
-    to_aug = desc_many(aug_list, weights)
-
+    weights.append(1 - np.sum(weights))
+    to_aug = np.random.choice(aug_list, p=weights)
     aug_im = eval(to_aug)
 
     aug_im = GaussianBlur(p=g_blur_p, blur_limit=10)(image=aug_im)['image']
@@ -99,7 +100,7 @@ def desc(p=0.5):
     return random.randrange(100) < p * 100
 
 
-def desc_many(augs:dict, weights):
+def desc_many(augs, weights):
     weights = weights/np.sum(weights)
     t_w  = [0]
     for i in range(len(weights)):
@@ -110,12 +111,10 @@ def desc_many(augs:dict, weights):
             return augs[i]
 
 
-
-
 if __name__ == '__main__':
     im_l = load_images("/home/serg/CV/Datasets/IceVision/", im_format="jpg")
     for i in range(len(im_l)):
-       for j in range(20):
+       for j in range(100):
            transform(im_l[0]).save("/home/serg/CV/Datasets/IceVision/icevision/AutomoldRoadAugmentationLibrary/test_augmentation/Augmented/" +  str(i) + "_" + str(j) + '.jpeg', "jpeg")
 
     vizualize([im_l[0], transform(im_l[0])], 2)
