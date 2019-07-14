@@ -27,6 +27,9 @@ most_common = {'8.2.1': '400 м', '5.23.1': 'Заречье', '3.24': '20', '1.1
                '5.31': '20', '5.32': '40', '6.11': 'р. Сетунь', '8.11': '12 т', '3.11': '5 т', '8.2.6': '50 м'}
 
 
+labels_temporary = {'1.25', '1.20.2'}
+
+
 def get_data(label):
     label = str(label)
     if label in labels_with_data:
@@ -34,10 +37,18 @@ def get_data(label):
     else:
         return ""
 
+def is_temporary(label):
+    label = str(label)
+    if label in labels_temporary:
+        return True
+    else:
+        return ''
+
 
 def main(args):
     df = pd.read_csv(args.input_file, sep='\t', dtype=str)
     df['data'] = df['class'].apply(get_data)
+    df['temporary'] = df['class'].apply(is_temporary)
     df.to_csv(args.output_file, sep='\t', index=False)
 
 
